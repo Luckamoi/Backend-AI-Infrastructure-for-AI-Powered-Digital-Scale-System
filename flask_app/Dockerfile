@@ -1,16 +1,16 @@
-# ใช้ Python image แบบ slim เพื่อลดขนาด container [cite: 3]
+# Use a slim Python image to reduce container size
 FROM python:3.10-slim
 
 WORKDIR /app
 
-# ติดตั้ง dependencies ก่อนเพื่อใช้ประโยชน์จาก Docker Cache [cite: 4, 6]
+# Install dependencies first to leverage Docker layer caching
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# คัดลอกโค้ดทั้งหมดเข้าสู่ container
+# Copy all source code into the container
 COPY . .
 
-# เปิดพอร์ต 5000 สำหรับ Flask [cite: 5]
+# Expose port 5000 for the Flask application
 EXPOSE 5000
 
 CMD ["python", "app.py"]
