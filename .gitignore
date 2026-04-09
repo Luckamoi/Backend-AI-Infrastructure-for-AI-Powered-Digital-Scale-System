@@ -1,0 +1,19 @@
+# 🔐 Secret
+.env
+
+# 🗄️ Database
+data/
+
+# 🧠 Python
+__pycache__/
+*.pyc
+
+# 📄 Logs
+*.log
+
+# 🐳 Docker
+*.pid
+
+# 💻 OS
+.DS_Store
+Thumbs.db
