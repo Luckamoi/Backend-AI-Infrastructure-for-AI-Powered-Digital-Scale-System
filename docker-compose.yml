@@ -1,0 +1,87 @@
+version: "3.8"
+
+services:
+  # 🐘 PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: n8n
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    expose:
+      - "5432"
+    restart: unless-stopped
+    networks:
+      - app_net
+
+  # ⚙️ n8n Automation Platform
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n
+    depends_on:
+      - postgres
+    expose:
+      - "5678"
+    volumes:
+      - ./data/n8n:/home/node/.n8n
+    restart: unless-stopped
+    environment:
+      N8N_COMMUNITY_PACKAGES_ALLOW_TOOL_USAGE: "true"
+      N8N_EDITOR_BASE_URL: ${N8N_HOST}
+      WEBHOOK_URL: ${N8N_HOST}
+      N8N_DEFAULT_BINARY_DATA_MODE: filesystem
+
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: postgres
+      DB_POSTGRESDB_PORT: "5432"
+      DB_POSTGRESDB_USER: ${POSTGRES_USER}
+      DB_POSTGRESDB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_POSTGRESDB_DATABASE: n8n
+    networks:
+      - app_net
+
+  # 📡 MQTT Broker (IoT Communication)
+  mosquitto:
+    image: eclipse-mosquitto
+    container_name: mosquitto
+    volumes:
+      - ./mosquitto/config:/mosquitto/config
+      - ./mosquitto/data:/mosquitto/data
+      - ./mosquitto/log:/mosquitto/log
+    ports:
+      - "1883:1883"
+    restart: unless-stopped
+    networks:
+      - app_net
+
+  # 🧠 Flask Backend API
+  flask-api:
+    build: ./flask_app
+    container_name: flask-app
+    volumes:
+      - ./flask_app:/app
+    expose:
+      - "5000"
+    restart: unless-stopped
+    networks:
+      - app_net
+
+  # 🌐 Cloudflare Tunnel (Public Access)
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    restart: unless-stopped
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN}
+    command: tunnel --no-autoupdate run
+    volumes:
+      - ./cloudflared:/etc/cloudflared
+    networks:
+      - app_net
+
+networks:
+  app_net:
+    driver: bridge
