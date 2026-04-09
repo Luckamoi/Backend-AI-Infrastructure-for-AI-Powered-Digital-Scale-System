@@ -1,145 +1,86 @@
 # Backend-AI-Infrastructure-for-AI-Powered-Digital-Scale-System
 This repository contains the software infrastructure of the system
 
-# 🤖 AI-Powered Digital Scale System
+---
 
-### Backend & AI Infrastructure
+## Overview
 
-This repository contains the backend and AI infrastructure for an intelligent digital weighing system that integrates IoT devices, real-time communication, and AI-powered processing.
+The AI-Powered Digital Scale System is designed to collect, process, and analyze weight data in real time. It bridges the gap between physical hardware and intelligent software by combining embedded systems with local Large Language Models (LLM).
+
+This repository focuses on the software, backend, and AI layers of the ecosystem.
 
 ---
 
-## 📌 Overview
+## System Architecture
 
-This project is an **AI-powered digital weighing system** designed to collect, process, and analyze weight data in real time.
+The data flows through the system in the following sequence:
 
-It combines:
-
-* Embedded hardware (load cells, microcontrollers)
-* IoT communication (MQTT)
-* Backend automation
-* AI processing (LLM-based via Ollama)
-
-> 💡 This repository focuses on the **software, backend, and AI layer**
+1. **Hardware Layer**: Load Cell Sensor -> Microcontroller (ESP32 / Arduino).
+2. **Transport Layer**: Data transmission via MQTT Broker (Mosquitto).
+3. **Backend Layer**: Flask API processes incoming data and manages logic.
+4. **Storage & Workflow**: Data is stored in PostgreSQL and managed through n8n Automation.
+5. **Intelligence Layer**: Data analysis and response generation via Ollama (Llama 3.2).
 
 ---
 
-## 🧠 AI Integration
+## Tech Stack
 
-This system integrates a local AI model to enable intelligent data processing and future predictive capabilities.
-
-### 🔧 Configuration
-
-* Model: `llama3.2` (via Ollama)
-* API: Local AI inference service
-* Integration: Flask API → Ollama
-
-### ⚙️ AI Workflow
-
-1. Sensor data is collected from hardware
-2. Data is sent via MQTT
-3. Backend processes incoming data
-4. AI module analyzes or generates responses
-5. Results can trigger automation (via n8n)
-
-### 💡 AI Capabilities
-
-* Smart interpretation of weight data
-* Rule-based + AI-assisted automation
-* Foundation for predictive analytics
+* **Backend**: Python (Flask)
+* **Database**: PostgreSQL
+* **AI Engine**: Ollama (Local LLM)
+* **Automation**: n8n
+* **Communication**: MQTT (Mosquitto)
+* **Infrastructure**: Docker & Docker Compose
+* **Network**: Cloudflare Tunnel
 
 ---
 
-## 🏗️ System Architecture
+## AI Integration
 
-```
-[ Load Cell Sensor ]
-        ↓
-[ Microcontroller (ESP32 / Arduino) ]
-        ↓
-[ MQTT Broker (Mosquitto) ]
-        ↓
-[ Flask Backend API ]
-        ↓
- ┌───────────────┬───────────────┐
- │               │               │
-[ PostgreSQL ] [ n8n Automation ] [ Ollama AI ]
-```
+The system utilizes a local AI model to enable smart interpretation of weight data without relying on external cloud APIs.
+
+* **Model**: Llama 3.2 (via Ollama)
+* **Integration**: Flask API interfaces with the local AI inference service.
+* **Capabilities**: Rule-based automation, weight trend interpretation, and a foundation for predictive analytics.
 
 ---
 
-## 🔌 Hardware Compatibility
+## Hardware Compatibility
 
-This system is **hardware-agnostic** and can integrate with any device capable of sending data via MQTT or supported communication protocols.
+The system is hardware-agnostic and follows standard data communication standards.
 
-### ✅ Supported Devices
-
-* ESP32 / Arduino
-* Raspberry Pi
-* Industrial PLC (via protocol bridge)
-
-### ⚠️ Notes
-
-* Devices without network capability require a gateway (e.g., microcontroller or edge device)
-* Sensors (e.g., load cells) must be connected through ADC modules (e.g., HX711)
-
-> 💡 The system focuses on **data communication standards**, not specific hardware models
+* **Supported Devices**: ESP32, Arduino, Raspberry Pi, and Industrial PLCs (via protocol bridge).
+* **Hardware Requirements**: Sensors (e.g., load cells) must be interfaced through ADC modules such as the HX711.
+* **Connectivity**: Devices must have network capabilities or use a gateway to communicate via MQTT.
 
 ---
 
-## 📡 Communication Layer
+## Key Features
 
-* MQTT (Mosquitto) for real-time data transmission
-
----
-
-## 🌐 Software & AI Layer (This Repository)
-
-* Flask API for data processing
-* PostgreSQL for data storage
-* n8n for workflow automation
-* Ollama for AI processing
-* Cloudflare Tunnel for deployment
+* **Real-time Monitoring**: Continuous collection and processing of weight data.
+* **IoT Ready**: Reliable communication using the industry-standard MQTT protocol.
+* **Local AI**: Intelligent analysis and data interpretation using on-premise LLMs.
+* **Workflow Automation**: Flexible task orchestration via n8n.
+* **Containerized**: Consistent deployment using Docker.
 
 ---
 
-## ⚙️ Tech Stack
+## API Reference
 
-* Python (Flask)
-* Docker / Docker Compose
-* PostgreSQL
-* n8n
-* MQTT (Mosquitto)
-* Ollama (LLM AI)
+### POST /chat
+Submits a prompt to the AI module for weight data analysis or general queries.
 
----
-
-## 🚀 Features
-
-* 📊 Real-time weight data collection
-* 🌐 IoT-based communication
-* 🤖 AI-powered processing (LLM integration)
-* ⚙️ Automated workflows (n8n)
-* 🐳 Containerized deployment (Docker)
-* 🔄 Scalable backend architecture
-
----
-
-## 📡 API Example
-
-### POST `/chat`
-
+**Request Body:**
 ```json
 {
-  "prompt": "Analyze weight trend"
+  "prompt": "Analyze weight trend from the last 10 entries"
 }
 ```
 
-Response:
-
+**Response:**
 ```json
 {
-  "text": "AI response",
+  "text": "Analysis result from AI",
   "model": "llama3.2",
   "status": "success"
 }
@@ -147,58 +88,33 @@ Response:
 
 ---
 
-## 🐳 Deployment
+## Deployment
 
-Run the system using Docker Compose:
+To deploy the entire stack using Docker Compose, execute the following command:
 
 ```bash
 docker-compose up -d
 ```
 
----
+### Environment Variables
 
-## 🔧 Environment Variables
-
-| Variable   | Description     | Default                           |
-| ---------- | --------------- | --------------------------------- |
-| OLLAMA_API | AI API endpoint | http://host.docker.internal:11434 |
-| MODEL_NAME | AI model        | llama3.2                          |
+| Variable | Description | Default Value |
+| --- | --- | --- |
+| OLLAMA_API | Endpoint for AI inference | http://host.docker.internal:11434 |
+| MODEL_NAME | The LLM model to be used | llama3.2 |
 
 ---
 
-## 🧪 Future Improvements
+## Future Improvements
 
-* 📈 AI-based weight prediction
-* 🧠 Pattern recognition from weight data
-* 📦 Object classification by weight behavior
-* 📊 Dashboard & visualization system
-* ☁️ Cloud deployment (AWS / GCP)
-
----
-
-## 👨‍💻 Role
-
-Designed and developed the system architecture and backend infrastructure:
-
-* Backend API development (Flask)
-* AI integration (Ollama)
-* Docker-based system deployment
-* IoT communication integration (MQTT)
-* Workflow automation (n8n)
+* AI-based weight and inventory forecasting.
+* Pattern recognition for automated object classification.
+* Advanced web-based dashboard for data visualization.
+* Integration with enterprise cloud platforms (AWS / GCP).
 
 ---
 
-## 🎯 Project Goal
+## Project Goal
 
-To build a **scalable AI + IoT system** that can be deployed in real-world applications such as:
-
-* Smart factories
-* Automated logistics systems
-* Intelligent inventory tracking
-
----
-
-## ⭐ Key Highlight
-
-> This project demonstrates the integration of **AI + IoT + Automation + Backend Engineering** in a real-world system.
+To provide a scalable AI + IoT framework suitable for industrial applications, including smart factories, automated logistics, and intelligent inventory tracking.
 
