@@ -179,28 +179,15 @@ cp .env.example .env
 ```
 
 ```env
-# Cloud AI
-CLOUD_AI_API_KEY=your_api_key_here
+# PostgreSQL (n8n internal database)
+POSTGRES_USER=your_user
+POSTGRES_PASSWORD=your_password
 
-# Google Sheets
-GOOGLE_SHEET_ID=your_google_sheet_id
-GOOGLE_SERVICE_ACCOUNT_JSON=path/to/credentials.json
-
-# Gmail OTP
-GMAIL_USER=your_email@gmail.com
-GMAIL_APP_PASSWORD=your_gmail_app_password
-OTP_EXPIRY_SECONDS=60
-
-# Security Settings
-WEIGHT_TOLERANCE_KG=2.0
-
-# MQTT
-MQTT_BROKER=mosquitto
-MQTT_PORT=1883
+# Cloudflare Tunnel
+TUNNEL_TOKEN=your_token
 
 # n8n
-N8N_BASIC_AUTH_USER=admin
-N8N_BASIC_AUTH_PASSWORD=your_password
+N8N_HOST=https://your-domain.com
 ```
 
 ### 3. Start the System
@@ -274,18 +261,6 @@ USE_LOCAL_AI=true
 OLLAMA_API=http://host.docker.internal:11434
 MODEL_NAME=llama3.2
 ```
-
----
-
-## 🔮 Roadmap
-
-- [ ] Multi-user profiles (separate weight + email per person)
-- [ ] OTP via SMS (Twilio) as alternative to Gmail
-- [ ] BMI / BMR auto-calculation in health workflow
-- [ ] Google Sheets dashboard with charts
-- [ ] Face recognition as optional third factor
-- [ ] Mobile notifications (Line / Telegram)
-- [ ] Weekly health summary report automation
 
 ---
 
