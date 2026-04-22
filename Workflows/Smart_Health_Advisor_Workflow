@@ -1,0 +1,778 @@
+{
+  "name": "Smart Health Advisor Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=user_message:{{ $json[\"chatInput\"] }}",
+        "options": {
+          "systemMessage": "=You are a helpful, polite AI assistant. Always respond in Thai.\n\n[General Rules]\nFor normal conversation, keep replies short (1–2 sentences) and focus on answering the user’s immediate question.\n\n[Food Analysis Rules]\nIF the user uploads a food image or provides a food name, you must override the \"short reply\" rule. Instead, analyze the food and strictly respond using the following fixed template:\n\n\"status\" = food\nชื่อเมนู: ___\n\nพลังงานโดยประมาณ: ___ kcal\n\nสารอาหารต่อหนึ่งหน่วยบริโภค:\n- คาร์โบไฮเดรต: ___ g\n- โปรตีน: ___ g\n- ไขมัน: ___ g\n- น้ำตาล: ___ g\n- โซเดียม: ___ mg\n\nสรุปสั้นๆ: ___ (one sentence in Thai)"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        -1760,
+        144
+      ],
+      "id": "4b5e8564-7bfd-4609-8284-b05e96dfb2bb",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash-lite",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -1760,
+        336
+      ],
+      "id": "8108b6d9-ce11-4824-bbbb-12398191e7d7",
+      "name": "Google Gemini Chat Model1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7b4613d7-8a5f-4eb5-9b57-e3e2da2a8911",
+              "name": "chatInput",
+              "value": "={{ $json.message.text }}",
+              "type": "string"
+            },
+            {
+              "id": "298979b5-103e-49c5-a142-f3b6474379ff",
+              "name": "replyToken",
+              "value": "={{ $json.replyToken }}",
+              "type": "string"
+            },
+            {
+              "id": "3b567ef1-121d-4184-8412-a137f8ea0b02",
+              "name": "sessionId",
+              "value": "={{ $json.source.userId }}",
+              "type": "string"
+            },
+            {
+              "id": "e83205f6-31d5-4469-ab43-d41de80a8f2f",
+              "name": "type",
+              "value": "={{ $json.message.type }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2368,
+        144
+      ],
+      "id": "d3a60ff7-627d-4cf2-8d20-5dc1f904724a",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -1200,
+        544
+      ],
+      "id": "48a223a2-071c-4496-81ce-08c3c1c8f0c8",
+      "name": "Merge13"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. รับค่า Input (ปรับให้ปลอดภัยกัน error)\n// สมมติว่า items[0] คือผลจาก AI และ items[1] คือค่าเดิมจาก webhook\nconst aiReplyRaw = items[0]?.json?.output || ''; \nconst contextItem = items[1]?.json || {};\n\nconst chatInput = contextItem.chatInput || '';\nconst replyToken = contextItem.replyToken || '';\nconst sessionId = contextItem.sessionId || '';\nconst importance_memory = contextItem.importance_memory || '';\nconst type = contextItem.type || '';\n\n// 2. ประกาศตัวแปรสำหรับเก็บค่า (Default values)\nlet status = \"unknown\"; \nlet name = \"\";\nlet calories = \"\";\nlet carbs = \"\";\nlet protein = \"\";\nlet fat = \"\";\nlet sugar = \"\";\nlet sodium = \"\";\nlet summary = \"\";\n\n// 3. เริ่มกระบวนการ Parse ข้อมูล (แบบ Text Regex เพราะ AI ตอบกลับมาเป็น Text Form)\n\n// --- [จุดที่แก้ไข] ปรับ Regex ให้ยืดหยุ่น รับ status ได้แม้ฟันหนูไม่ครบ ---\nconst statusMatch = aiReplyRaw.match(/status\"?\\s*=\\s*(\\w+)/i);\nif (statusMatch) {\n    status = statusMatch[1];\n}\n// -------------------------------------------------------------\n\n// ตรวจจับค่าต่างๆ ด้วย Regex ภาษาไทย\nconst nameMatch = aiReplyRaw.match(/ชื่อเมนู:\\s*(.+)/);\nif (nameMatch) name = nameMatch[1].trim();\n\nconst calMatch = aiReplyRaw.match(/พลังงานโดยประมาณ:\\s*(.+)/);\nif (calMatch) calories = calMatch[1].trim();\n\nconst carbsMatch = aiReplyRaw.match(/- คาร์โบไฮเดรต:\\s*(.+)/);\nif (carbsMatch) carbs = carbsMatch[1].trim();\n\nconst protMatch = aiReplyRaw.match(/- โปรตีน:\\s*(.+)/);\nif (protMatch) protein = protMatch[1].trim();\n\nconst fatMatch = aiReplyRaw.match(/- ไขมัน:\\s*(.+)/);\nif (fatMatch) fat = fatMatch[1].trim();\n\nconst sugarMatch = aiReplyRaw.match(/- น้ำตาล:\\s*(.+)/);\nif (sugarMatch) sugar = sugarMatch[1].trim();\n\nconst sodMatch = aiReplyRaw.match(/- โซเดียม:\\s*(.+)/);\nif (sodMatch) sodium = sodMatch[1].trim();\n\nconst sumMatch = aiReplyRaw.match(/สรุปสั้นๆ:\\s*(.+)/);\nif (sumMatch) summary = sumMatch[1].trim();\n\n\n// 4. จัดรูปแบบข้อความที่จะส่งกลับ (Formatted Message)\nlet formatted = aiReplyRaw; // ค่าเริ่มต้น (เผื่อไม่ใช่ food)\n\nif (status === 'food' || name !== \"\") {\n    // ถ้าเป็นอาหาร ให้จัดรูปแบบสวยงาม\n    formatted = `ชื่อเมนู: ${name}\\n` +\n                `พลังงาน: ${calories}\\n\\n` +\n                `สารอาหาร:\\n` +\n                `- คาร์โบไฮเดรต: ${carbs}\\n` +\n                `- โปรตีน: ${protein}\\n` +\n                `- ไขมัน: ${fat}\\n` +\n                `- น้ำตาล: ${sugar}\\n` +\n                `- โซเดียม: ${sodium}\\n\\n` +\n                `สรุป: ${summary}`;\n}\n\n// 5. ส่งค่ากลับ (Return Output)\nreturn [\n  {\n    json: {\n      // ข้อมูลดั้งเดิม\n      chatInput,\n      replyToken,\n      sessionId,\n      importance_memory,\n      type,\n      \n      // ข้อมูลจาก AI (Raw)\n      aiReply: aiReplyRaw,\n      \n      // ข้อมูลที่ประมวลผลแล้ว\n      status,          // <--- ตอนนี้ status จะถูกต้องแล้วครับ\n      formatted,       // <--- ข้อความที่จัด Format แล้วสำหรับส่ง LINE\n      \n      // ข้อมูลย่อย (เผื่อนำไปบันทึกลง Database)\n      food_data: {\n          name,\n          calories,\n          carbohydrates: carbs,\n          protein,\n          fat,\n          sugar,\n          sodium,\n          summary\n      }\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -992,
+        544
+      ],
+      "id": "ed2bc688-0832-4ebe-9117-c8b154e7e6a2",
+      "name": "Code3"
+    },
+    {
+      "parameters": {},
+      "type": "@aotoki/n8n-nodes-line-messaging.lineMessaging",
+      "typeVersion": 1,
+      "position": [
+        96,
+        160
+      ],
+      "id": "8cefe616-680f-468d-9fba-94fec83658cf",
+      "name": "Line Messaging"
+    },
+    {
+      "parameters": {
+        "jsCode": "// รับ input items\nconst chatInput = items[0]?.json?.chatInput || '';\nconst replyToken = items[0]?.json?.replyToken || '';\nconst sessionId = items[0]?.json?.sessionId || '';\nconst type = items[0]?.json?.type || '';\n\nreturn [\n  {\n    json: {\n      chatInput: chatInput,\n      replyToken: replyToken,\n      sessionId: sessionId,\n      type: type,\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2048,
+        144
+      ],
+      "id": "5bffcc97-69a8-478f-b8cd-7634611cca4e",
+      "name": "Code4"
+    },
+    {
+      "parameters": {
+        "url": "=https://api-data.line.me/v2/bot/message/{{ $json.message.id }}/content",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "lineMessagingApi",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "image"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -2544,
+        560
+      ],
+      "id": "d90b2ed1-faa2-49be-af1d-a2fdc6527e45",
+      "name": "HTTP Request1",
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "c2d5d891-b762-484c-9d71-04650831031c",
+                    "leftValue": "={{ $json.message.type }}",
+                    "rightValue": "text",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message.type }}",
+                    "rightValue": "=image",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "2fefc1d7-3453-41b0-b70c-da01a081a831"
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -2688,
+        304
+      ],
+      "id": "5d1d25a7-909c-4069-b6b4-3e7f8c0979a8",
+      "name": "Switch3"
+    },
+    {
+      "parameters": {
+        "inputDataFieldName": "image",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive",
+          "cachedResultUrl": "https://drive.google.com/drive/my-drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1ZSI5FAhomPl7M1FXWmRrSnAAjt6tjl0E",
+          "mode": "list",
+          "cachedResultName": "LLM-image",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1ZSI5FAhomPl7M1FXWmRrSnAAjt6tjl0E"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -2384,
+        688
+      ],
+      "id": "f9cc6e6a-264c-44d8-9097-fa153a20b079",
+      "name": "Upload file"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.webViewLink }}",
+          "mode": "url"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -2176,
+        688
+      ],
+      "id": "598e7760-364d-40aa-bbd0-99410bf3c429",
+      "name": "Download file"
+    },
+    {
+      "parameters": {
+        "operation": "deleteFile",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.webViewLink }}",
+          "mode": "url"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -1872,
+        688
+      ],
+      "id": "8cf6a489-76c5-4e72-8b5d-627dc926dea1",
+      "name": "Delete a file"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "298979b5-103e-49c5-a142-f3b6474379ff",
+              "name": "replyToken",
+              "value": "={{ $json.replyToken }}",
+              "type": "string"
+            },
+            {
+              "id": "3b567ef1-121d-4184-8412-a137f8ea0b02",
+              "name": "sessionId",
+              "value": "={{ $json.source.userId }}",
+              "type": "string"
+            },
+            {
+              "id": "62dc6ba3-91e9-4732-b7a6-534655d63912",
+              "name": "type",
+              "value": "={{ $json.message.type }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1680,
+        560
+      ],
+      "id": "ecda33d2-6ef9-48da-8800-4d4515ceef62",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "7882b404-9e8e-4220-9759-ea38ebcacc79",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "food",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -768,
+        384
+      ],
+      "id": "165bcc12-3e95-40b9-a6a2-baa71a246e3d",
+      "name": "If3"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "mini_project",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 900853933,
+          "mode": "list",
+          "cachedResultName": "FamilyWeightReferrence",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit#gid=900853933"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -560,
+        224
+      ],
+      "id": "d832d789-3314-4536-bd61-cac31439e19d",
+      "name": "Get row(s) in sheet"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -368,
+        352
+      ],
+      "id": "ff897047-d799-4925-8939-94fccddbe6b4",
+      "name": "Merge17"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. ค้นหาข้อมูล Context (Chat)\nconst contextItemObj = items.find(item => item.json.aiReply || item.json.chatInput);\nconst contextData = contextItemObj ? contextItemObj.json : {};\n\n// 2. ค้นหาข้อมูล User Profile\nconst targetSessionId = contextData.sessionId;\nlet userProfile = {};\n\nif (targetSessionId) {\n    const userItemObj = items.find(item => item.json.userId === targetSessionId);\n    if (userItemObj) {\n        userProfile = userItemObj.json;\n    }\n}\n\n// ดึงค่าพื้นฐาน\nconst aiReplyRaw = contextData.aiReply || contextData.output || ''; \nconst chatInput = contextData.chatInput || '';\nconst replyToken = contextData.replyToken || '';\nconst sessionId = contextData.sessionId || '';\nconst type = contextData.type || '';\nconst userName = userProfile.Name || ''; \n\n\n// --- [ส่วนคำนวณแคลอรี่ใหม่] ---\n\n// 1. ดึงแคลอรี่คงเหลือล่าสุดจาก Database (ถ้าไม่มีให้ใช้ 0)\nconst currentRemain = parseFloat(userProfile[\"calories remain\"] || 0);\n\n// 2. ดึงแคลอรี่ของอาหารมื้อนี้ (Parse จากข้อความ AI)\nlet foodCalories = 0;\nconst calMatch = aiReplyRaw.match(/พลังงานโดยประมาณ:\\s*([\\d\\.]+)/); // จับเฉพาะตัวเลข\nif (calMatch) {\n    foodCalories = parseFloat(calMatch[1]);\n}\n\n// 3. คำนวณยอดคงเหลือใหม่ (เอาคงเหลือเก่า - มื้อนี้)\nconst newRemaining = currentRemain - foodCalories;\n\n// ---------------------------\n\n\n// 3. Regex Parse ข้อมูลอื่นๆ (เหมือนเดิม)\nlet status = \"unknown\"; \nlet name = \"\";\nlet carbs = \"\";\nlet protein = \"\";\nlet fat = \"\";\nlet sugar = \"\";\nlet sodium = \"\";\nlet summary = \"\";\n\nconst statusMatch = aiReplyRaw.match(/status\"?\\s*=\\s*(\\w+)/i);\nif (statusMatch) status = statusMatch[1];\nelse if (contextData.status) status = contextData.status;\n\nconst nameMatch = aiReplyRaw.match(/ชื่อเมนู:\\s*(.+)/);\nif (nameMatch) name = nameMatch[1].trim();\n\nconst carbsMatch = aiReplyRaw.match(/- คาร์โบไฮเดรต:\\s*(.+)/);\nif (carbsMatch) carbs = carbsMatch[1].trim();\n\nconst protMatch = aiReplyRaw.match(/- โปรตีน:\\s*(.+)/);\nif (protMatch) protein = protMatch[1].trim();\n\nconst fatMatch = aiReplyRaw.match(/- ไขมัน:\\s*(.+)/);\nif (fatMatch) fat = fatMatch[1].trim();\n\nconst sugarMatch = aiReplyRaw.match(/- น้ำตาล:\\s*(.+)/);\nif (sugarMatch) sugar = sugarMatch[1].trim();\n\nconst sodMatch = aiReplyRaw.match(/- โซเดียม:\\s*(.+)/);\nif (sodMatch) sodium = sodMatch[1].trim();\n\nconst sumMatch = aiReplyRaw.match(/สรุปสั้นๆ:\\s*(.+)/);\nif (sumMatch) summary = sumMatch[1].trim();\n\n\n// 4. จัดรูปแบบข้อความที่จะส่งกลับ (Formatted Message)\nlet formatted = aiReplyRaw; \n\nif (status === 'food' || name !== \"\") {\n    let greeting = userName ? `คุณ ${userName} ครับ\\n` : \"\";\n    \n    // ตรวจสอบสถานะ (กินเกินหรือยัง?)\n    const isOver = newRemaining < 0;\n    const emoji = isOver ? \"🚨\" : \"✅\";\n    const statusText = isOver ? \"เกินโควตาไป\" : \"คงเหลือ\";\n    const showNumber = Math.abs(newRemaining).toFixed(0); // เอาเครื่องหมายลบออกเพื่อความสวยงาม\n\n    formatted = `${greeting}🍽️ บันทึกเมนู: ${name}\\n` +\n                `🔥 พลังงาน: ${foodCalories} kcal\\n\\n` +\n                `📊 สารอาหาร:\\n` +\n                `- คาร์บ: ${carbs}\\n` +\n                `- โปรตีน: ${protein}\\n` +\n                `- ไขมัน: ${fat}\\n\\n` +\n                `__________________\\n` +\n                `${emoji} ${statusText}: ${showNumber} kcal`;\n}\n\n// 5. ส่งค่ากลับ\nreturn [\n  {\n    json: {\n      // ข้อมูลดั้งเดิม\n      chatInput,\n      replyToken,\n      sessionId,\n      userName, \n      \n      // ข้อมูลการคำนวณ (สำคัญ: ส่งค่านี้ไปอัปเดต Database)\n      prev_remaining: currentRemain,  // คงเหลือเก่า\n      food_cal: foodCalories,         // มื้อนี้\n      new_remaining: newRemaining,    // คงเหลือใหม่ (เอาไป update ใน sheet)\n\n      // ข้อมูลแสดงผล\n      aiReply: aiReplyRaw,\n      status,          \n      formatted,       \n      \n      food_data: {\n          name,\n          calories: foodCalories, // ส่งเป็นตัวเลข\n          carbohydrates: carbs,\n          protein,\n          fat,\n          sugar,\n          sodium,\n          summary\n      }\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -176,
+        352
+      ],
+      "id": "24d0c10c-f9fe-4e5c-bc9f-accc930f95b6",
+      "name": "Code6"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "mini_project",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 345848238,
+          "mode": "list",
+          "cachedResultName": "health",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit#gid=345848238"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "calories": "={{ $json.food_data.calories }}",
+            "carbohydrate": "={{ $json.food_data.carbohydrates }}",
+            "protein": "={{ $json.food_data.protein }}",
+            "fat": "={{ $json.food_data.fat }}",
+            "sugar": "={{ $json.food_data.sugar }}",
+            "sodium": "={{ $json.food_data.sodium }}",
+            "date": "={{ new Date().toISOString() }}",
+            "food_name": "={{ $json.food_data.name }}",
+            "user_name": "={{ $json.userName }}",
+            "user_id": "={{ $json.sessionId }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "date",
+              "displayName": "date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "user_name",
+              "displayName": "user_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "food_name",
+              "displayName": "food_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "calories",
+              "displayName": "calories",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "carbohydrate",
+              "displayName": "carbohydrate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "protein",
+              "displayName": "protein",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "fat",
+              "displayName": "fat",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "sugar",
+              "displayName": "sugar",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "sodium",
+              "displayName": "sodium",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        96,
+        352
+      ],
+      "id": "853b0e96-3b06-4374-92fb-2e1a44e91b4d",
+      "name": "Append row in sheet"
+    },
+    {
+      "parameters": {},
+      "type": "@aotoki/n8n-nodes-line-messaging.lineMessagingTrigger",
+      "typeVersion": 1,
+      "position": [
+        -2896,
+        304
+      ],
+      "id": "95b246e4-869a-4946-8dc0-398a97ae2e1f",
+      "name": "Line Messaging Trigger",
+      "webhookId": "YOUR_WEBHOOK_ID"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Merge13",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Code4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge13": {
+      "main": [
+        [
+          {
+            "node": "Code3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code3": {
+      "main": [
+        [
+          {
+            "node": "If3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code4": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge13",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Upload file",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch3": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload file": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Delete a file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "Merge13",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "If3": {
+      "main": [
+        [
+          {
+            "node": "Merge17",
+            "type": "main",
+            "index": 1
+          },
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Merge17",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge17": {
+      "main": [
+        [
+          {
+            "node": "Code6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code6": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Line Messaging",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Line Messaging Trigger": {
+      "main": [
+        [
+          {
+            "node": "Switch3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "YOUR_VERSION_ID",
+  "meta": {
+    "instanceId": "YOUR_INSTANCE_ID"
+  },
+  "id": "YOUR_CREDENTIAL_ID",
+  "tags": []
+}
