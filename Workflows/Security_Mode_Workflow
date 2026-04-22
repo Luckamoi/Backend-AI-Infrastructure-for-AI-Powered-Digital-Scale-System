@@ -1,0 +1,999 @@
+{
+  "name": "Security Mode Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -1920,
+        -2144
+      ],
+      "id": "40d4f352-4fae-4019-99ae-95b3f2a1ff60",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json[\"status\"] }}",
+                    "rightValue": 1,
+                    "operator": {
+                      "type": "number",
+                      "operation": "equals"
+                    },
+                    "id": "4e52570e-4e00-4e27-9e4a-552d7e5396b4"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "1"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "e6ffd1f1-3552-40c0-9231-6a594379fafe",
+                    "leftValue": "={{ $json[\"status\"] }}",
+                    "rightValue": 0,
+                    "operator": {
+                      "type": "number",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "0"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -1424,
+        -2144
+      ],
+      "id": "808e2bd8-2e28-4651-9544-7296b0d758df",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "mini_project",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 829824199,
+          "mode": "list",
+          "cachedResultName": "User_History",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit#gid=829824199"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Date": "={{ $json[\"date\"] }}",
+            "Name": "={{ $json[\"owner_name\"] }}",
+            "Weight": "={{ $json[\"input_weight\"] }}",
+            "Status": "={{ $json[\"status\"] }}"
+          },
+          "matchingColumns": [
+            "Date"
+          ],
+          "schema": [
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Weight",
+              "displayName": "Weight",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        -1152,
+        -2352
+      ],
+      "id": "d912f0d1-645f-4f26-8cdb-ec6df638ffa6",
+      "name": "Save User History"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json[\"mode\"] }}",
+                    "rightValue": 0,
+                    "operator": {
+                      "type": "number",
+                      "operation": "equals"
+                    },
+                    "id": "1b6e1556-2142-4293-baea-1b2bb23155bf"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Security Mode"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -2864,
+        -2128
+      ],
+      "id": "afa3a7e0-603d-41ba-92f2-35324ba261ce",
+      "name": "Mode Selection"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $items();\nconst inputWeight = parseFloat($json['weight_input']);\n\nfunction getThaiDateTimeString() {\n    const now = new Date();\n    now.setHours(now.getHours() + 7);\n\n    const day = now.getDate();\n    const month = now.getMonth() + 1;\n    const yearBE = now.getFullYear() + 543;\n\n    const hours = now.getHours().toString().padStart(2, '0');\n    const minutes = now.getMinutes().toString().padStart(2, '0');\n    const seconds = now.getSeconds().toString().padStart(2, '0');\n\n    return `${day}/${month}/${yearBE} ${hours}:${minutes}:${seconds}`;\n}\n\nconst timestamp = getThaiDateTimeString();\n\nlet matchStatus1 = null;\nlet matchStatus2 = null;\n\nfor (const item of items) {\n    const refWeight = parseFloat(item.json.Weight);\n    const diff = Math.abs(refWeight - inputWeight);\n    \n    if (diff <= 1) {\n        matchStatus1 = {\n            owner_name: item.json.Name,\n            input_weight: inputWeight,\n            status: 1,\n            date: timestamp\n        };\n        break;\n    //} else if (diff <= 1.5) {\n        //matchStatus2 = {\n            //owner_name: \"Unknown\",\n            //input_weight: inputWeight,\n           //status: 2,\n            //date: timestamp\n       // };\n    }\n}\n\nif (matchStatus1) {\n    return [{ json: matchStatus1 }];\n} else if (matchStatus2) {\n    return [{ json: matchStatus2 }];\n} else {\n    return [{\n        json: {\n            owner_name : \"Unknown\",\n            input_weight: inputWeight,\n            status: 0,\n            date: timestamp\n        }\n    }];\n}\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1696,
+        -2144
+      ],
+      "id": "ba4c4eaa-7cbc-4935-aa98-327b5c07ca3e",
+      "name": "Compare To FamilyWeightReferrence"
+    },
+    {
+      "parameters": {
+        "topic": "AuthResponse",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mqtt",
+      "typeVersion": 1,
+      "position": [
+        32,
+        -2336
+      ],
+      "id": "6e4f7596-a4be-40a2-a730-26cab348c604",
+      "name": "FamilyResult"
+    },
+    {
+      "parameters": {
+        "topics": "WeightConfirm",
+        "options": {
+          "jsonParseBody": true,
+          "onlyMessage": true
+        }
+      },
+      "type": "n8n-nodes-base.mqttTrigger",
+      "typeVersion": 1,
+      "position": [
+        -3408,
+        -2128
+      ],
+      "id": "0c5e767b-e999-46d2-b00a-ec05606fba85",
+      "name": "Weight Information"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "mini_project",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 900853933,
+          "mode": "list",
+          "cachedResultName": "FamilyWeightReferrence",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit#gid=900853933"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        -2368,
+        -2256
+      ],
+      "id": "7c3823d9-2246-4dfe-99b7-ad9da17d9b06",
+      "name": "Family Weight Reference"
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "mini_project",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 829824199,
+          "mode": "list",
+          "cachedResultName": "User_History",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit#gid=829824199"
+        },
+        "event": "rowAdded",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [
+        -2704,
+        -1712
+      ],
+      "id": "50d9f88a-faf1-44ab-9243-2a4e9967dcf8",
+      "name": "Google Sheets Trigger"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "mini_project",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 829824199,
+          "mode": "list",
+          "cachedResultName": "User_History",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit#gid=829824199"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        -2288,
+        -1712
+      ],
+      "id": "1a36e675-47e8-40b3-aac3-0a7d6c020d47",
+      "name": "User History"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "mini_project",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 900853933,
+          "mode": "list",
+          "cachedResultName": "FamilyWeightReferrence",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit#gid=900853933"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Weight": "={{$json[\"Weight\"]}}",
+            "Name": "={{$json[\"Name\"]}}"
+          },
+          "matchingColumns": [
+            "Name"
+          ],
+          "schema": [
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Security Number",
+              "displayName": "Security Number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Weight",
+              "displayName": "Weight",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        -1888,
+        -1712
+      ],
+      "id": "3000ec0c-860a-452d-93f8-c71f71e183ec",
+      "name": "Update Family Weight Reference"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6e9b407c-5085-4174-aab7-494127b91b2b",
+              "name": "=weight_input",
+              "value": "={{$json[0].weight}}",
+              "type": "number"
+            },
+            {
+              "id": "d3ba6c92-7ca2-4b0d-a3f5-d8b43afc7d8a",
+              "name": "mode",
+              "value": "={{$json[0].mode}}",
+              "type": "number"
+            },
+            {
+              "id": "f9493616-a1a8-46bf-af60-c2760f7a0658",
+              "name": "items_number_select",
+              "value": "={{$json[0].items_number_select}}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -3072,
+        -2128
+      ],
+      "id": "05ecd92a-385c-484c-82ea-9c31f93017fa",
+      "name": "Data Filter"
+    },
+    {
+      "parameters": {
+        "jsCode": "// รับข้อมูลจาก previous node (ต้องเป็น 5 ข้อมูลล่าสุดของแต่ละชื่อแล้ว)\nconst data = items.map(item => item.json);\n\n// รวมข้อมูลตามชื่อ\nconst grouped = {};\nfor (const item of data) {\n  const name = item.Name;\n  if (!grouped[name]) grouped[name] = [];\n  grouped[name].push(item.Weight);\n}\n\n// คำนวณค่าเฉลี่ยของแต่ละชื่อ\nconst result = [];\nfor (const name in grouped) {\n  const weights = grouped[name];\n  const sum = weights.reduce((a, b) => a + b, 0);\n  const avg = sum / weights.length;\n\n  result.push({\n    Name: name,\n    Weight: avg\n  });\n}\n\n// คืนค่าแบบ n8n\nreturn result.map(entry => ({ json: entry }));\n\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2080,
+        -1712
+      ],
+      "id": "faae069c-6e3b-4140-a0be-6b42437864fe",
+      "name": "Average Weight"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{$json[\"Status\"]}}",
+                    "rightValue": 1,
+                    "operator": {
+                      "type": "number",
+                      "operation": "equals"
+                    },
+                    "id": "2b04846a-0fd4-4e9c-a606-c448273f153d"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "NewFamilyWeight"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "dbb03872-7e43-4f5f-9041-ea13bd2e9702",
+                    "leftValue": "={{$json[\"Status\"]}}",
+                    "rightValue": "1",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "NewFamilyWeight"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -2512,
+        -1712
+      ],
+      "id": "9da58023-aad9-4526-bc10-153b4e099fdf",
+      "name": "Filter Real Weight of Member"
+    },
+    {
+      "parameters": {
+        "jsCode": "const otp = Math.floor(Math.random() * 10000)\n  .toString()\n  .padStart(4, \"0\");\n\nreturn [\n  {\n    json: {\n      otp,\n      expire_at: Date.now() + 2 * 60 * 1000 // หมดอายุใน 2 นาที\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -816,
+        -2352
+      ],
+      "id": "5c181665-e9f3-4c9b-84ab-642e26af553e",
+      "name": "Code"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -368,
+        -2336
+      ],
+      "id": "9de367d1-8aec-4e05-9aa6-5fe579021ec7",
+      "name": "Merge5"
+    },
+    {
+      "parameters": {
+        "jsCode": "// รับข้อมูลทั้งหมดจาก input\nconst items = $input.all();\n\n// หาออบเจกต์ที่มี owner_name\nconst ownerObj = items.find(i => i.json.owner_name);\nconst ownerName = ownerObj?.json.owner_name;\n\n// หาออบเจกต์ที่มี Name ตรงกับ owner_name\nconst matched = items.find(i => i.json.Name === ownerName);\n\n// ส่งผลลัพธ์ mail\nreturn [\n  {\n    json: {\n      owner_name: ownerName,\n      mail: matched?.json.Mail || null\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -96,
+        -1968
+      ],
+      "id": "8a7185a1-f8ea-4bd6-a7f4-11ee841c04dd",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "mini_project",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 900853933,
+          "mode": "list",
+          "cachedResultName": "FamilyWeightReferrence",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit#gid=900853933"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        -672,
+        -2176
+      ],
+      "id": "51360c48-e292-42b2-a991-d18419294d8b",
+      "name": "Family Weight Reference1"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -288,
+        -1968
+      ],
+      "id": "9451cf9b-05a3-4158-93a3-0c75991ac760",
+      "name": "Merge6"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        32,
+        -2160
+      ],
+      "id": "893e4c64-0297-48b2-ac23-d7f02ab444ce",
+      "name": "Merge7"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $item(\"1\").$node[\"Merge7\"].json[\"mail\"] }}",
+        "subject": "🔐OTP ใช้สำหรับเข้าบ้าน",
+        "message": "=<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"UTF-8\">\n  <style>\n    body {\n      font-family: Arial, sans-serif;\n      background-color: #ffffff;\n      color: #333333;\n      padding: 20px;\n    }\n    .otp-box {\n      background-color: #e8f4ff;\n      border-left: 6px solid #007bff;\n      padding: 16px;\n      margin-bottom: 20px;\n    }\n    .otp-code {\n      font-size: 32px;\n      font-weight: bold;\n      color: #007bff;\n      letter-spacing: 4px;\n    }\n    .info-table {\n      width: 100%;\n      border-collapse: collapse;\n      margin-top: 10px;\n    }\n    .info-table th, .info-table td {\n      text-align: left;\n      padding: 8px;\n      border-bottom: 1px solid #ddd;\n    }\n    .footer {\n      margin-top: 30px;\n      font-size: 0.9em;\n      color: #777777;\n    }\n  </style>\n</head>\n<body>\n  <div class=\"otp-box\">\n    <p>รหัสยืนยัน (OTP) ของคุณคือ:</p>\n    <div class=\"otp-code\">{{ $item(\"0\").$node[\"Merge7\"].json[\"otp\"] }}</div>\n  </div>\n\n  <p>รายละเอียด:</p>\n  <table class=\"info-table\">\n    <tr>\n      <th>ชื่อผู้ใช้</th>\n      <td>{{ $json[\"owner_name\"] }}</td>\n    </tr>\n    <tr>\n      <th>วันเวลา</th>\n      <td>{{ $json[\"date\"] }}</td>\n    </tr>\n    <tr>\n      <th>อุปกรณ์</th>\n      <td>{{ $json[\"Device\"] }}</td>\n    </tr>\n  </table>\n\n  <p>\n    รหัสนี้มีอายุการใช้งาน 2 นาที กรุณากรอกภายในเวลาที่กำหนดเพื่อยืนยันตัวตนของคุณ\n  </p>\n\n  <div class=\"footer\">\n    อีเมลนี้ถูกส่งโดยระบบอัตโนมัติของ n8n กรุณาอย่าตอบกลับ<br>\n  </div>\n\n</body>\n</html>\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        320,
+        -2160
+      ],
+      "id": "e86cbe0e-fc52-477b-b67d-440c706cb43a",
+      "name": "ส่ง otp",
+      "webhookId": "YOUR_WEBHOOK_ID"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json[\"mails\"].join(\",\") }}",
+        "subject": "แจ้งเตือนการบุกรุก",
+        "message": "=<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"UTF-8\">\n  <style>\n    body {\n      font-family: Arial, sans-serif;\n      background-color: #ffffff;\n      color: #333333;\n      padding: 20px;\n    }\n    .alert-box {\n      background-color: #ffe8e8;\n      border-left: 6px solid #ff3b30;\n      padding: 16px;\n      margin-bottom: 20px;\n    }\n    .info-table {\n      width: 100%;\n      border-collapse: collapse;\n      margin-top: 10px;\n    }\n    .info-table th, .info-table td {\n      text-align: left;\n      padding: 8px;\n      border-bottom: 1px solid #ddd;\n    }\n    .footer {\n      margin-top: 30px;\n      font-size: 0.9em;\n      color: #777777;\n    }\n  </style>\n</head>\n<body>\n  <div class=\"alert-box\">\n    <p><strong>แจ้งเตือนการบุกรุก!</strong></p>\n    <p>ระบบตรวจพบความพยายามเข้าถึงที่ผิดปกติ โปรดตรวจสอบทันที</p>\n  </div>\n\n  <p>รายละเอียดเหตุการณ์:</p>\n  <table class=\"info-table\">\n    <tr>\n      <th>วันเวลา</th>\n      <td>{{ $json[\"date\"] }}</td>\n    </tr>\n    <tr>\n      <th>อุปกรณ์ที่พยายามเข้าถึง</th>\n      <td>{{ $json[\"Device\"] }}</td>\n    </tr>\n    <tr>\n      <th>สถานะ</th>\n      <td style=\"color:#ff3b30;\"><strong>ต้องตรวจสอบด่วน</strong></td>\n    </tr>\n  </table>\n\n  <p>\n    หากไม่ใช่คุณ กรุณาเปลี่ยนรหัสผ่านทันที และตรวจสอบประวัติการใช้งานของบัญชีเพื่อความปลอดภัย\n  </p>\n\n  <div class=\"footer\">\n    อีเมลนี้ถูกส่งโดยระบบอัตโนมัติของ n8n เพื่อตรวจสอบความปลอดภัย กรุณาอย่าตอบกลับ<br>\n  </div>\n\n</body>\n</html>\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -272,
+        -1536
+      ],
+      "id": "4ccac2bb-389e-4e05-b846-2a682c233e28",
+      "name": "ส่ง otp1",
+      "webhookId": "YOUR_WEBHOOK_ID"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "mini_project",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 900853933,
+          "mode": "list",
+          "cachedResultName": "FamilyWeightReferrence",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit#gid=900853933"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        -1120,
+        -1680
+      ],
+      "id": "b61e933e-b048-4e97-ba3e-0757045b76a0",
+      "name": "Family Weight Reference3"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -752,
+        -1536
+      ],
+      "id": "4faa4899-74f9-44b5-a510-87ff62d2c3ea",
+      "name": "Merge16"
+    },
+    {
+      "parameters": {
+        "jsCode": "// รับข้อมูลทั้งหมดจาก input\nconst items = $input.all();\n\n// ดึงเฉพาะค่า Mail ออกมาเป็น array\nconst mails = items\n  .map(i => i.json?.Mail)\n  .filter(m => m); // ตัดค่า null/undefined ออก\n\nreturn [\n  {\n    json: {\n      mails: mails\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -512,
+        -1536
+      ],
+      "id": "6ead3516-a666-47e1-a81c-20c46aa19dcc",
+      "name": "Code5"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Compare To FamilyWeightReferrence",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Save User History",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge5",
+            "type": "main",
+            "index": 1
+          },
+          {
+            "node": "Merge6",
+            "type": "main",
+            "index": 1
+          },
+          {
+            "node": "Family Weight Reference1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Save User History",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "FamilyResult",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Family Weight Reference3",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge16",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Mode Selection": {
+      "main": [
+        [
+          {
+            "node": "Family Weight Reference",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Compare To FamilyWeightReferrence": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Weight Information": {
+      "main": [
+        [
+          {
+            "node": "Data Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Family Weight Reference": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets Trigger": {
+      "main": [
+        [
+          {
+            "node": "Filter Real Weight of Member",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "User History": {
+      "main": [
+        [
+          {
+            "node": "Average Weight",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Data Filter": {
+      "main": [
+        [
+          {
+            "node": "Mode Selection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Average Weight": {
+      "main": [
+        [
+          {
+            "node": "Update Family Weight Reference",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Real Weight of Member": {
+      "main": [
+        [
+          {
+            "node": "User History",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "User History",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Merge5",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge5": {
+      "main": [
+        [
+          {
+            "node": "FamilyResult",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Family Weight Reference1": {
+      "main": [
+        [
+          {
+            "node": "Merge6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge6": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "Merge7",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge7": {
+      "main": [
+        [
+          {
+            "node": "ส่ง otp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Family Weight Reference3": {
+      "main": [
+        [
+          {
+            "node": "Merge16",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge16": {
+      "main": [
+        [
+          {
+            "node": "Code5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code5": {
+      "main": [
+        [
+          {
+            "node": "ส่ง otp1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "YOUR_VERSION_ID",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "YOUR_INSTANCE_ID"
+  },
+  "id": "YOUR_CREDENTIAL_ID",
+  "tags": []
+}
